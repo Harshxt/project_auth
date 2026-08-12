@@ -9,6 +9,9 @@ public class Controller {
     @GetMapping("/hello")
 
     public String hello() {
-        return "Hello worlds ";
+        return "Hello worlds";
     }
+
+    /* authentication endpoints */
+
 }
