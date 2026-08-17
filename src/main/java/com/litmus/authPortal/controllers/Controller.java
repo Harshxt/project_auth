@@ -1,15 +1,16 @@
 package com.litmus.authPortal.controllers;
 
+import com.litmus.authPortal.dto.auth.AuthRequest;
+import com.litmus.authPortal.dto.auth.AuthResponse;
 import com.litmus.authPortal.exceptions.UserAlreadyExistsException;
 import com.litmus.authPortal.service.AuthService;
 import com.litmus.authPortal.service.JwtService;
 
-import java.util.Map;
+import jakarta.validation.Valid;
 
 import javax.naming.AuthenticationException;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,25 +33,20 @@ public class Controller {
     /* authentication endpoints */
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, Object> payload) {
-        String username = (String) payload.get("username");
-        String password = (String) payload.get("password");
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
+        String username = request.username();
+        String password = request.password();
 
-        if (username == null || password == null) {
-            // TODO: Add exception instead and append to controller advice
-            throw new BadCredentialsException("Invalid username or password");
-        }
+        String token = authService.loginUser(username, password);
 
-        String response = authService.loginUser(username, password);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new AuthResponse(token));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerBasicAuth(@RequestBody Map<String, Object> payload)
+    public ResponseEntity<String> registerBasicAuth(@Valid @RequestBody AuthRequest request)
             throws AuthenticationException {
-        String username = (String) payload.get("username");
-        String password = (String) payload.get("password");
+        String username = request.username();
+        String password = request.password();
         if (authService.userExists(username)) {
             throw new UserAlreadyExistsException("User already exist!");
         } else {
