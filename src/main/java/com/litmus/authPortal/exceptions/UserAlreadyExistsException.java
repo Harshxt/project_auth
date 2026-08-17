@@ -1,6 +1,6 @@
 package com.litmus.authPortal.exceptions;
 
-import javax.naming.AuthenticationException;
+import org.springframework.security.core.AuthenticationException;
 
 /**
  * UserAlreadyExistsException

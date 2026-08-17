@@ -1,8 +1,6 @@
 package com.litmus.authPortal.service;
 
 import java.time.LocalDateTime;
-import java.util.Map;
-
 import javax.naming.AuthenticationException;
 
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +19,7 @@ import com.litmus.authPortal.repository.UsersRepository;
 public class AuthService {
     private final JwtService jwtService;
     private final DaoUserDetailsService daoUserDetailsService;
-    private final AuthenticationProvider authenticationProvider;
+    // private final AuthenticationProvider authenticationProvider;
     private final PasswordEncoder passwordEncoder;
     private final UsersRepository usersRepo;
     private final AuthenticationManager authManager;
@@ -32,7 +30,7 @@ public class AuthService {
         this.usersRepo = usersRepo;
         this.passwordEncoder = passwordEncoder;
         this.authManager = authManager;
-        this.authenticationProvider = authenticationProvider;
+        // this.authenticationProvider = authenticationProvider;
         this.daoUserDetailsService = daoUserDetailsService;
         this.jwtService = jwtService;
     }
