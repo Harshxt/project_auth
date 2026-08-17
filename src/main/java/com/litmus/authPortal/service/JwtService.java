@@ -22,7 +22,7 @@ public class JwtService {
     }
 
     // Token Generation for user
-    public String generateToken(String username, String password) {
+    public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
         return Jwts.builder()
                 .claims(claims)

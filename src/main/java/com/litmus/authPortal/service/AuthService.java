@@ -3,7 +3,6 @@ package com.litmus.authPortal.service;
 import java.time.LocalDateTime;
 import javax.naming.AuthenticationException;
 
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -11,15 +10,16 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import com.litmus.authPortal.model.Users;
 import com.litmus.authPortal.repository.UsersRepository;
 
-@Configuration
+@Service
 public class AuthService {
     private final JwtService jwtService;
     private final DaoUserDetailsService daoUserDetailsService;
-    // private final AuthenticationProvider authenticationProvider;
+
     private final PasswordEncoder passwordEncoder;
     private final UsersRepository usersRepo;
     private final AuthenticationManager authManager;
@@ -30,7 +30,7 @@ public class AuthService {
         this.usersRepo = usersRepo;
         this.passwordEncoder = passwordEncoder;
         this.authManager = authManager;
-        // this.authenticationProvider = authenticationProvider;
+
         this.daoUserDetailsService = daoUserDetailsService;
         this.jwtService = jwtService;
     }
@@ -61,7 +61,7 @@ public class AuthService {
 
         if (authentication.isAuthenticated()) {
 
-            return jwtService.generateToken(username, password);
+            return jwtService.generateToken(username);
         } else
             throw new BadCredentialsException("Invalid username and password");
     }
