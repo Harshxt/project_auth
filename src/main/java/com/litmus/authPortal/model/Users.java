@@ -2,7 +2,11 @@ package com.litmus.authPortal.model;
 
 import java.time.LocalDateTime;
 
+import com.litmus.authPortal.model.enums.AuthProviderIdentity;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,4 +29,7 @@ public class Users {
     int phoneNumber;
     LocalDateTime userCreated;
     LocalDateTime lastModified;
+    @Enumerated(EnumType.STRING)
+    AuthProviderIdentity authProvider;
+
 }

@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.litmus.authPortal.model.Users;
+import com.litmus.authPortal.model.enums.AuthProviderIdentity;
 import com.litmus.authPortal.repository.UsersRepository;
 
 @Service
@@ -43,6 +44,7 @@ public class AuthService {
         user.setPassword(encodedPassword);
         user.setUserCreated(LocalDateTime.now());
         user.setLastModified(LocalDateTime.now());
+        user.setAuthProvider(AuthProviderIdentity.LOCAL);
 
         return usersRepo.save(user);
     }

@@ -34,7 +34,7 @@ public class JwtService {
     }
 
     private Claims extractClaims(String token) {
-        // TODO Auto-generated method stub
+
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()

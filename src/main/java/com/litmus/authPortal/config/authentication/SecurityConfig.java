@@ -21,12 +21,15 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    private final OAuth2LoginSuccessService OAuth2LoginSuccessService;
     private final UserDetailsService userDetailsService;
     private final JwtFilter jwtFilter;
 
-    SecurityConfig(UserDetailsService userDetailsService, JwtFilter jwtFilter) {
+    SecurityConfig(UserDetailsService userDetailsService, JwtFilter jwtFilter,
+            OAuth2LoginSuccessService OAuth2LoginSuccessService) {
         this.userDetailsService = userDetailsService;
         this.jwtFilter = jwtFilter;
+        this.OAuth2LoginSuccessService = OAuth2LoginSuccessService;
     }
 
     @Bean
@@ -47,6 +50,8 @@ public class SecurityConfig {
                     response.getWriter().write(
                             "{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
                 }));
+
+        http.oauth2Login(oauth2 -> oauth2.successHandler(OAuth2LoginSuccessService));
 
         return http.build();
     }

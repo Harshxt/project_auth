@@ -7,5 +7,7 @@ import com.litmus.authPortal.model.Users;
 public interface UsersRepository extends JpaRepository<Users, Integer> {
     Users findByUsername(String username);
 
+    Users findByEmail(String email);
+
     boolean existsByUsername(String username);
 }
