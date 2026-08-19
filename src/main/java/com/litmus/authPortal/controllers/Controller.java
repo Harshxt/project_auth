@@ -1,9 +1,11 @@
 package com.litmus.authPortal.controllers;
 
 import com.litmus.authPortal.dto.GenericResponse;
+import com.litmus.authPortal.dto.VerifyEmailRequest;
 import com.litmus.authPortal.dto.auth.AuthRequest;
 import com.litmus.authPortal.dto.auth.AuthResponse;
 import com.litmus.authPortal.exceptions.UserAlreadyExistsException;
+import com.litmus.authPortal.model.Users;
 import com.litmus.authPortal.service.AuthService;
 import com.litmus.authPortal.service.EmailService;
 import com.litmus.authPortal.service.JwtService;
@@ -45,21 +47,24 @@ public class Controller {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerBasicAuth(@Valid @RequestBody AuthRequest request)
+    public ResponseEntity<Users> registerBasicAuth(@Valid @RequestBody AuthRequest request)
             throws AuthenticationException {
         String username = request.username();
         String password = request.password();
+        String email = request.email();
         if (authService.userExists(username)) {
             throw new UserAlreadyExistsException("User already exist!");
-        } else {
-            authService.registerUser(username, password);
         }
-        return ResponseEntity.ok("Registered");
+        Users user = authService.registerUser(username, email, password);
+        user.setPassword(null);
+        user.setId(0);
+
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping("/auth/verifyEmail")
-    public ResponseEntity<?> verifyEmail(@RequestBody String email) {
-        authService.verifyEmail(email);
+    public ResponseEntity<?> verifyEmail(@RequestBody VerifyEmailRequest request) {
+        authService.verifyEmail(request.email());
         return ResponseEntity.ok(new GenericResponse("email",
                 "If the email is valid, you will receive an email, check your spam folder"));
 

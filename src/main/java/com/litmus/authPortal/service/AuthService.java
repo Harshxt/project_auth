@@ -41,12 +41,13 @@ public class AuthService {
         this.emailService = emailService;
     }
 
-    public Users registerUser(String username, String password) {
+    public Users registerUser(String username, String email, String password) {
         String encodedPassword = passwordEncoder.encode(password);
 
         Users user = new Users();
         user.setUsername(username);
         user.setPassword(encodedPassword);
+        user.setEmail(email);
         user.setUserCreated(LocalDateTime.now());
         user.setLastModified(LocalDateTime.now());
         user.setAuthProvider(AuthProviderIdentity.LOCAL);
