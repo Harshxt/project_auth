@@ -1,9 +1,11 @@
 package com.litmus.authPortal.controllers;
 
+import com.litmus.authPortal.dto.GenericResponse;
 import com.litmus.authPortal.dto.auth.AuthRequest;
 import com.litmus.authPortal.dto.auth.AuthResponse;
 import com.litmus.authPortal.exceptions.UserAlreadyExistsException;
 import com.litmus.authPortal.service.AuthService;
+import com.litmus.authPortal.service.EmailService;
 import com.litmus.authPortal.service.JwtService;
 
 import jakarta.validation.Valid;
@@ -20,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class Controller {
     private final AuthService authService;
 
-    Controller(AuthService authService, JwtService jwtService) {
+    Controller(AuthService authService, JwtService jwtService, EmailService emailService) {
         this.authService = authService;
     }
 
@@ -53,6 +55,14 @@ public class Controller {
             authService.registerUser(username, password);
         }
         return ResponseEntity.ok("Registered");
+    }
+
+    @PostMapping("/auth/verifyEmail")
+    public ResponseEntity<?> verifyEmail(@RequestBody String email) {
+        authService.verifyEmail(email);
+        return ResponseEntity.ok(new GenericResponse("email",
+                "If the email is valid, you will receive an email, check your spam folder"));
+
     }
 
 }

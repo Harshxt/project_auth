@@ -12,12 +12,15 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.litmus.authPortal.model.EmailOtp;
 import com.litmus.authPortal.model.Users;
 import com.litmus.authPortal.model.enums.AuthProviderIdentity;
 import com.litmus.authPortal.repository.UsersRepository;
 
 @Service
 public class AuthService {
+    private final EmailService emailService;
+    private final OtpService otpService;
     private final JwtService jwtService;
     private final DaoUserDetailsService daoUserDetailsService;
 
@@ -27,13 +30,15 @@ public class AuthService {
 
     AuthService(UsersRepository usersRepo, PasswordEncoder passwordEncoder, AuthenticationManager authManager,
             AuthenticationProvider authenticationProvider, DaoUserDetailsService daoUserDetailsService,
-            JwtService jwtService) {
+            JwtService jwtService, OtpService otpService, EmailService emailService) {
         this.usersRepo = usersRepo;
         this.passwordEncoder = passwordEncoder;
         this.authManager = authManager;
 
         this.daoUserDetailsService = daoUserDetailsService;
         this.jwtService = jwtService;
+        this.otpService = otpService;
+        this.emailService = emailService;
     }
 
     public Users registerUser(String username, String password) {
@@ -71,4 +76,21 @@ public class AuthService {
     public UserDetails getUserDetails(String username, String password) {
         return daoUserDetailsService.loadUserByUsername(username);
     }
+
+    public void verifyEmail(String email) {
+        Users user = usersRepo.findByEmail(email);
+        // if email is invalid or doesn't exists
+        if (user == null)
+            return;
+
+        EmailOtp otp = otpService.generateOtp(email);
+        // if otp not generated
+        if (otp == null) {
+            return;
+        }
+        emailService.sendOtpMail(email, otp.getOtp());
+
+        return;
+    }
+
 }
