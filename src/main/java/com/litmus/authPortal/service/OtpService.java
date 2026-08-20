@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import com.litmus.authPortal.model.EmailOtp;
 import com.litmus.authPortal.repository.EmailOtpRepository;
 
+import jakarta.validation.constraints.Email;
+
 @Service
 public class OtpService {
     @Autowired
@@ -45,5 +47,18 @@ public class OtpService {
         newOtp.setExpiryTime(LocalDateTime.now().plusMinutes(10));
         return newOtp;
 
+    }
+
+    public boolean validateOtp(String otp, String email) {
+        EmailOtp otpInDb = otpRepo.findOtpByEmail(email).orElseGet((null));
+        if (otpInDb.getExpiryTime().isAfter(LocalDateTime.now())) {
+            otpRepo.delete(otpInDb);
+            return false;
+        }
+        if (otpInDb.getOtp() != otp) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }

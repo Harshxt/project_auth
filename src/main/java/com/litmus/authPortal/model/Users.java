@@ -32,4 +32,6 @@ public class Users {
     @Enumerated(EnumType.STRING)
     AuthProviderIdentity authProvider;
 
+    boolean emailVerified = false;
+
 }

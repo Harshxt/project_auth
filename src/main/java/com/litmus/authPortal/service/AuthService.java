@@ -8,6 +8,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -78,10 +79,11 @@ public class AuthService {
         return daoUserDetailsService.loadUserByUsername(username);
     }
 
-    public void verifyEmail(String email) {
-        Users user = usersRepo.findByEmail(email);
+    public void generateOtpForEmail(String email) {
+
+        Users expectedUser = usersRepo.findByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
         // if email is invalid or doesn't exists
-        if (user == null)
+        if (email != expectedUser.getEmail())
             return;
 
         EmailOtp otp = otpService.generateOtp(email);
@@ -92,6 +94,20 @@ public class AuthService {
         emailService.sendOtpMail(email, otp.getOtp());
 
         return;
+    }
+
+    public boolean verifyEmail(String otp, String email) {
+        boolean validate = otpService.validateOtp(otp, email);
+
+        if (!validate) {
+            return false;
+        }
+
+        Users user = usersRepo.findByEmail(email);
+        user.setEmailVerified(true);
+        usersRepo.save(user);
+        return true;
+
     }
 
 }
