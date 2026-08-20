@@ -22,9 +22,9 @@ public class OtpService {
             otpRepo.deleteByEmail(email);
 
         }
-        ;
-
-        return newEmailOtp(email);
+        EmailOtp otp = newEmailOtp(email);
+        otpRepo.save(otp);
+        return otp;
 
     }
 
@@ -50,14 +50,23 @@ public class OtpService {
     }
 
     public boolean validateOtp(String otp, String email) {
-        EmailOtp otpInDb = otpRepo.findOtpByEmail(email).orElseGet((null));
-        if (otpInDb.getExpiryTime().isAfter(LocalDateTime.now())) {
+        EmailOtp otpInDb = otpRepo.findOtpByEmail(email).orElseGet(() -> null);
+        System.out.println(otpInDb);
+        if (otpInDb == null) {
+            return false;
+        }
+        if (otpInDb.getExpiryTime().isBefore(LocalDateTime.now())) {
+            System.out.println("Deleting otp");
             otpRepo.delete(otpInDb);
             return false;
         }
-        if (otpInDb.getOtp() != otp) {
+        if (!otpInDb.getOtp().equals(otp)) {
+            System.out.println("otp in db: " + otpInDb);
+            System.out.println("Otp provided: " + otp);
             return false;
         } else {
+            otpRepo.delete(otpInDb);
+            System.out.println("OTP verified");
             return true;
         }
     }

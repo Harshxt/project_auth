@@ -64,8 +64,8 @@ public class Controller {
     }
 
     @GetMapping("/auth/getEmailOtp")
-    public ResponseEntity<?> getEmailOtp(@RequestParam getEmailOtpRequest request) {
-        authService.generateOtpForEmail(request.email());
+    public ResponseEntity<?> getEmailOtp(@RequestParam String email) {
+        authService.generateOtpForEmail(email);
         return ResponseEntity.ok(new GenericResponse("email",
                 "If the email is valid, you will receive an email, check your spam folder"));
 

@@ -83,8 +83,11 @@ public class AuthService {
 
         Users expectedUser = usersRepo.findByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
         // if email is invalid or doesn't exists
-        if (email != expectedUser.getEmail())
+        if (!email.equals(expectedUser.getEmail())) {
+            System.out.println(
+                    "Email not mattching, Expected Email:" + expectedUser.getEmail() + "Email received" + email);
             return;
+        }
 
         EmailOtp otp = otpService.generateOtp(email);
         // if otp not generated
@@ -92,7 +95,7 @@ public class AuthService {
             return;
         }
         emailService.sendOtpMail(email, otp.getOtp());
-
+        System.out.println(otp.getOtp());
         return;
     }
 

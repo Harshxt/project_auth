@@ -52,7 +52,7 @@ public class JwtFilter extends OncePerRequestFilter {
                     }
                 }
             } catch (JwtException | IllegalArgumentException e) {
-
+                logger.warn("JWT processing failed: " + e.getMessage());
             }
         }
 
