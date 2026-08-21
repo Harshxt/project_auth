@@ -1,73 +1,85 @@
 package com.litmus.authPortal.service;
 
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Random;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.litmus.authPortal.model.EmailOtp;
 import com.litmus.authPortal.repository.EmailOtpRepository;
 
-import jakarta.validation.constraints.Email;
-
 @Service
 public class OtpService {
-    @Autowired
-    EmailOtpRepository otpRepo;
 
+    private static final Logger log = LoggerFactory.getLogger(OtpService.class);
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int OTP_EXPIRY_MINUTES = 10;
+
+    private final EmailOtpRepository otpRepo;
+
+    public OtpService(EmailOtpRepository otpRepo) {
+        this.otpRepo = otpRepo;
+    }
+
+    @Transactional
     public EmailOtp generateOtp(String email) {
+        otpRepo.deleteByEmail(email);
 
-        if (otpRepo.findOtpByEmail(email).orElseGet(() -> null) != null) {
-            otpRepo.deleteByEmail(email);
+        String otpCode = generateSecureOtpCode();
+        EmailOtp emailOtp = new EmailOtp(
+                email,
+                otpCode,
+                LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES)
+        );
 
-        }
-        EmailOtp otp = newEmailOtp(email);
-        otpRepo.save(otp);
-        return otp;
-
+        return otpRepo.save(emailOtp);
     }
 
-    // util
-    public static String getRandomNumberString() {
-        // It will generate 6 digit random Number.
-        // from 0 to 999999
-        Random rnd = new Random();
-        int number = rnd.nextInt(999999);
+    @Transactional
+    public boolean validateOtp(String email, String providedOtp) {
+        EmailOtp otpInDb = otpRepo.findByEmail(email).orElse(null);
 
-        // this will convert any number sequence into 6 character.
-        return String.format("%06d", number);
-    }
-
-    private EmailOtp newEmailOtp(String email) {
-
-        EmailOtp newOtp = new EmailOtp();
-        newOtp.setOtp(getRandomNumberString());
-        newOtp.setEmail(email);
-        newOtp.setExpiryTime(LocalDateTime.now().plusMinutes(10));
-        return newOtp;
-
-    }
-
-    public boolean validateOtp(String otp, String email) {
-        EmailOtp otpInDb = otpRepo.findOtpByEmail(email).orElseGet(() -> null);
-        System.out.println(otpInDb);
         if (otpInDb == null) {
+            log.warn("OTP validation failed: No OTP record found for email: {}", email);
             return false;
         }
-        if (otpInDb.getExpiryTime().isBefore(LocalDateTime.now())) {
-            System.out.println("Deleting otp");
+
+        if (otpInDb.isExpired()) {
+            log.warn("OTP validation failed: Expired OTP for email: {}", email);
             otpRepo.delete(otpInDb);
             return false;
         }
-        if (!otpInDb.getOtp().equals(otp)) {
-            System.out.println("otp in db: " + otpInDb);
-            System.out.println("Otp provided: " + otp);
-            return false;
-        } else {
+
+        if (otpInDb.hasExceededMaxAttempts()) {
+            log.warn("OTP validation failed: Max attempts exceeded for email: {}", email);
             otpRepo.delete(otpInDb);
-            System.out.println("OTP verified");
-            return true;
+            return false;
         }
+
+        boolean isMatch = MessageDigest.isEqual(
+                otpInDb.getOtp().getBytes(),
+                providedOtp.getBytes()
+        );
+
+        if (!isMatch) {
+            otpInDb.incrementFailedAttempts();
+            otpRepo.save(otpInDb);
+            log.warn("OTP mismatch for email: {}. Attempts left: {}",
+                    email, EmailOtp.MAX_ATTEMPTS - otpInDb.getFailedAttempts());
+            return false;
+        }
+
+        otpRepo.delete(otpInDb);
+        log.info("OTP successfully verified for email: {}", email);
+        return true;
+    }
+
+    private String generateSecureOtpCode() {
+        int number = SECURE_RANDOM.nextInt(1_000_000);
+        return String.format("%06d", number);
     }
 }

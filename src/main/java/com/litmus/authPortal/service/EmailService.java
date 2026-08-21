@@ -1,5 +1,7 @@
 package com.litmus.authPortal.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -7,32 +9,34 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+
     private final JavaMailSender javaMailSender;
 
     @Value("${spring.mail.username}")
     private String sender;
 
-    EmailService(JavaMailSender javaMailSender) {
+    public EmailService(JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
     }
 
-    public String sendOtpMail(String recipient, String otp) {
+    public boolean sendOtpMail(String recipient, String otp) {
         try {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
 
             mailMessage.setFrom(sender);
             mailMessage.setTo(recipient);
-            mailMessage.setText(otp);
+            mailMessage.setText("Your OTP is: " + otp + "\nThis code will expire in 10 minutes.");
             mailMessage.setSubject("OTP for authProject");
 
             javaMailSender.send(mailMessage);
-            System.out.println("Email sent");
-            return "Email Sent Successfully to " + recipient + "with body" + otp;
+            log.info("OTP email successfully sent to {}", recipient);
+            return true;
 
         } catch (Exception e) {
-            System.out.println("Email not sent! An error occured");
-            return "Something went wrong" + e.getMessage() + "for sender" + sender;
-
+            log.error("Failed to send OTP email to {}: {}", recipient, e.getMessage());
+            return false;
         }
     }
 }

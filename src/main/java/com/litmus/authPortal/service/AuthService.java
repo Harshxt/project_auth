@@ -3,6 +3,8 @@ package com.litmus.authPortal.service;
 import java.time.LocalDateTime;
 import javax.naming.AuthenticationException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -20,6 +22,9 @@ import com.litmus.authPortal.repository.UsersRepository;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     private final EmailService emailService;
     private final OtpService otpService;
     private final JwtService jwtService;
@@ -29,7 +34,7 @@ public class AuthService {
     private final UsersRepository usersRepo;
     private final AuthenticationManager authManager;
 
-    AuthService(UsersRepository usersRepo, PasswordEncoder passwordEncoder, AuthenticationManager authManager,
+    public AuthService(UsersRepository usersRepo, PasswordEncoder passwordEncoder, AuthenticationManager authManager,
             AuthenticationProvider authenticationProvider, DaoUserDetailsService daoUserDetailsService,
             JwtService jwtService, OtpService otpService, EmailService emailService) {
         this.usersRepo = usersRepo;
@@ -58,10 +63,7 @@ public class AuthService {
 
     public boolean userExists(String username) throws AuthenticationException {
         Users user = usersRepo.findByUsername(username);
-        if (user != null) {
-            return true;
-        }
-        return false;
+        return user != null;
     }
 
     public String loginUser(String username, String password) {
@@ -69,10 +71,10 @@ public class AuthService {
                 .authenticate(new UsernamePasswordAuthenticationToken(username, password));
 
         if (authentication.isAuthenticated()) {
-
             return jwtService.generateToken(username);
-        } else
+        } else {
             throw new BadCredentialsException("Invalid username and password");
+        }
     }
 
     public UserDetails getUserDetails(String username, String password) {
@@ -80,37 +82,39 @@ public class AuthService {
     }
 
     public void generateOtpForEmail(String email) {
-
-        Users expectedUser = usersRepo.findByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
-        // if email is invalid or doesn't exists
-        if (!email.equals(expectedUser.getEmail())) {
-            System.out.println(
-                    "Email not mattching, Expected Email:" + expectedUser.getEmail() + "Email received" + email);
-            return;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            Users expectedUser = usersRepo.findByUsername(auth.getName());
+            if (expectedUser == null || !email.equalsIgnoreCase(expectedUser.getEmail())) {
+                log.warn("Email does not match authenticated user. Authenticated: {}, Provided email: {}",
+                        auth.getName(), email);
+                return;
+            }
+        } else {
+            Users user = usersRepo.findByEmail(email);
+            if (user == null) {
+                log.warn("Generate OTP requested for non-existent email: {}", email);
+                return;
+            }
         }
 
         EmailOtp otp = otpService.generateOtp(email);
-        // if otp not generated
-        if (otp == null) {
-            return;
+        if (otp != null) {
+            emailService.sendOtpMail(email, otp.getOtp());
         }
-        emailService.sendOtpMail(email, otp.getOtp());
-        System.out.println(otp.getOtp());
-        return;
     }
 
-    public boolean verifyEmail(String otp, String email) {
-        boolean validate = otpService.validateOtp(otp, email);
-
-        if (!validate) {
+    public boolean verifyEmail(String email, String otp) {
+        boolean isValid = otpService.validateOtp(email, otp);
+        if (!isValid) {
             return false;
         }
 
         Users user = usersRepo.findByEmail(email);
-        user.setEmailVerified(true);
-        usersRepo.save(user);
+        if (user != null) {
+            user.setEmailVerified(true);
+            usersRepo.save(user);
+        }
         return true;
-
     }
-
 }
