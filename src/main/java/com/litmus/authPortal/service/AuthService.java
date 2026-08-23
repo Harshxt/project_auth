@@ -87,7 +87,7 @@ public class AuthService {
             Users expectedUser = usersRepo.findByUsername(auth.getName());
             if (expectedUser == null || !email.equalsIgnoreCase(expectedUser.getEmail())) {
                 log.warn("Email does not match authenticated user. Authenticated: {}, Provided email: {}",
-                        auth.getName(), email);
+                        expectedUser.getEmail(), email);
                 return;
             }
         } else {
