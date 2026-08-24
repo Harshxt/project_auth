@@ -27,24 +27,24 @@ public class Controller {
     }
 
     @GetMapping("/hello")
-    public String hello() {
-        return "Hello worlds";
+    public ResponseEntity<GenericResponse<Void>> hello() {
+        return ResponseEntity.ok(new GenericResponse<>(true, "Hello worlds"));
     }
 
     /* authentication endpoints */
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
+    public ResponseEntity<GenericResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest request) {
         String username = request.username();
         String password = request.password();
 
         String token = authService.loginUser(username, password);
 
-        return ResponseEntity.ok(new AuthResponse(token));
+        return ResponseEntity.ok(new GenericResponse<>(true, "Login successful", new AuthResponse(token)));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Users> registerBasicAuth(@Valid @RequestBody AuthRequest request)
+    public ResponseEntity<GenericResponse<Users>> registerBasicAuth(@Valid @RequestBody AuthRequest request)
             throws AuthenticationException {
         String username = request.username();
         String password = request.password();
@@ -56,25 +56,25 @@ public class Controller {
         user.setPassword(null);
         user.setId(0);
 
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(new GenericResponse<>(true, "User registered successfully", user));
     }
 
     @PostMapping({ "/auth/email-otp/send", "/auth/getEmailOtp" })
-    public ResponseEntity<GenericResponse> sendEmailOtp(@Valid @RequestBody SendEmailOtpRequest requestPayload) {
+    public ResponseEntity<GenericResponse<Void>> sendEmailOtp(@Valid @RequestBody SendEmailOtpRequest requestPayload) {
         authService.generateOtpForEmail(requestPayload.email());
-        return ResponseEntity.ok(new GenericResponse("email",
+        return ResponseEntity.ok(new GenericResponse<>(true,
                 "If the email is valid, you will receive a verification code. Please check your spam folder."));
     }
 
     @PostMapping("/auth/verifyEmail")
-    public ResponseEntity<GenericResponse> verifyEmail(@Valid @RequestBody VerifyEmailOtpRequest requestPayload) {
+    public ResponseEntity<GenericResponse<Void>> verifyEmail(@Valid @RequestBody VerifyEmailOtpRequest requestPayload) {
         boolean validate = authService.verifyEmail(requestPayload.email(), requestPayload.otp());
         if (!validate) {
             return new ResponseEntity<>(
-                    new GenericResponse("OtpFailure", "Invalid or expired OTP."),
+                    new GenericResponse<>(false, "Invalid or expired OTP."),
                     HttpStatus.BAD_REQUEST);
         }
 
-        return ResponseEntity.ok(new GenericResponse("OtpSuccess", "Email has been successfully verified."));
+        return ResponseEntity.ok(new GenericResponse<>(true, "Email has been successfully verified."));
     }
 }

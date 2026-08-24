@@ -3,6 +3,7 @@ package com.litmus.authPortal.exceptions.advice;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.litmus.authPortal.dto.GenericResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,14 +16,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<String> userAlreadyExists(AuthenticationException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
-
+    public ResponseEntity<GenericResponse<Void>> userAlreadyExists(AuthenticationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new GenericResponse<>(false, ex.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<String> badCrendetials(BadCredentialsException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    public ResponseEntity<GenericResponse<Void>> badCredentials(BadCredentialsException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new GenericResponse<>(false, e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
