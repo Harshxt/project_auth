@@ -1,5 +1,6 @@
 package com.litmus.authPortal.service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import com.litmus.authPortal.model.EmailOtp;
@@ -20,27 +21,26 @@ import static org.mockito.Mockito.when;
 class OtpServiceTest {
 
     @Mock
-    private EmailOtpRepository otpRepo; // The simulated dependency
+    private EmailOtpRepository otpRepo;
 
     @InjectMocks
-    private OtpService otpService; // The real service under test
+    private OtpService otpService;
 
     @Test
-    @DisplayName("generateOtp should delete existing OTP and save a new one")
+    @DisplayName("generateOtp should delete existing OTP and save a new 6-digit one")
     void generateOtp_ShouldDeleteOldOtpAndSaveNew() {
-        // 1. Arrange (Given)
+        // Arrange
         var email = "user@example.com";
         when(otpRepo.save(any(EmailOtp.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // 2. Act (When)
+        // Act
         var generatedOtp = otpService.generateOtp(email);
 
-        // 3. Assert (Then)
+        // Assert
         assertThat(generatedOtp).isNotNull();
         assertThat(generatedOtp.getEmail()).isEqualTo(email);
-        assertThat(generatedOtp.getOtp()).isNotBlank();
+        assertThat(generatedOtp.getOtp()).hasSize(6);
 
-        // Verify interactions with the mock
         verify(otpRepo).deleteByEmail(email);
         verify(otpRepo).save(any(EmailOtp.class));
     }
@@ -57,5 +57,54 @@ class OtpServiceTest {
 
         // Assert
         assertThat(isValid).isFalse();
+    }
+
+    @Test
+    @DisplayName("validateOtp should return true and delete record when OTP matches and is valid")
+    void validateOtp_WhenOtpMatches_ShouldReturnTrueAndDelete() {
+        // Arrange
+        var email = "valid@example.com";
+        var otpRecord = new EmailOtp(email, "654321", LocalDateTime.now().plusMinutes(10));
+        when(otpRepo.findByEmail(email)).thenReturn(Optional.of(otpRecord));
+
+        // Act
+        var isValid = otpService.validateOtp(email, "654321");
+
+        // Assert
+        assertThat(isValid).isTrue();
+        verify(otpRepo).delete(otpRecord);
+    }
+
+    @Test
+    @DisplayName("validateOtp should return false and delete record when OTP is expired")
+    void validateOtp_WhenOtpExpired_ShouldReturnFalseAndDelete() {
+        // Arrange
+        var email = "expired@example.com";
+        var expiredOtpRecord = new EmailOtp(email, "112233", LocalDateTime.now().minusMinutes(1));
+        when(otpRepo.findByEmail(email)).thenReturn(Optional.of(expiredOtpRecord));
+
+        // Act
+        var isValid = otpService.validateOtp(email, "112233");
+
+        // Assert
+        assertThat(isValid).isFalse();
+        verify(otpRepo).delete(expiredOtpRecord);
+    }
+
+    @Test
+    @DisplayName("validateOtp should increment failed attempts and return false when OTP does not match")
+    void validateOtp_WhenOtpMismatches_ShouldIncrementAttemptsAndReturnFalse() {
+        // Arrange
+        var email = "mismatch@example.com";
+        var otpRecord = new EmailOtp(email, "123456", LocalDateTime.now().plusMinutes(10));
+        when(otpRepo.findByEmail(email)).thenReturn(Optional.of(otpRecord));
+
+        // Act
+        var isValid = otpService.validateOtp(email, "999999");
+
+        // Assert
+        assertThat(isValid).isFalse();
+        assertThat(otpRecord.getFailedAttempts()).isEqualTo(1);
+        verify(otpRepo).save(otpRecord);
     }
 }
