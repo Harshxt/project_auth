@@ -16,7 +16,8 @@ class JwtServiceTest {
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService();
+        // We now need to pass a mock secret since the constructor requires it.
+        jwtService = new JwtService("TestSecretKeyThatIsLongEnoughForHS256Algorithm");
     }
 
     @Test
