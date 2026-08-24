@@ -6,7 +6,6 @@ import com.litmus.authPortal.dto.auth.AuthResponse;
 import com.litmus.authPortal.dto.auth.otp.SendEmailOtpRequest;
 import com.litmus.authPortal.dto.auth.otp.VerifyEmailOtpRequest;
 import com.litmus.authPortal.exceptions.UserAlreadyExistsException;
-import com.litmus.authPortal.model.Users;
 import com.litmus.authPortal.service.AuthService;
 import jakarta.validation.Valid;
 import javax.naming.AuthenticationException;
@@ -44,7 +43,7 @@ public class Controller {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<GenericResponse<Users>> registerBasicAuth(@Valid @RequestBody AuthRequest request)
+    public ResponseEntity<GenericResponse<AuthResponse>> registerBasicAuth(@Valid @RequestBody AuthRequest request)
             throws AuthenticationException {
         String username = request.username();
         String password = request.password();
@@ -52,11 +51,14 @@ public class Controller {
         if (authService.userExists(username)) {
             throw new UserAlreadyExistsException("User already exist!");
         }
-        Users user = authService.registerUser(username, email, password);
-        user.setPassword(null);
-        user.setId(0);
 
-        return ResponseEntity.ok(new GenericResponse<>(true, "User registered successfully", user));
+        // Register the user
+        authService.registerUser(username, email, password);
+
+        // Automatically log them in to generate the token
+        String token = authService.loginUser(username, password);
+
+        return ResponseEntity.ok(new GenericResponse<>(true, "User registered successfully", new AuthResponse(token)));
     }
 
     @PostMapping({ "/auth/email-otp/send", "/auth/getEmailOtp" })
@@ -77,4 +79,12 @@ public class Controller {
 
         return ResponseEntity.ok(new GenericResponse<>(true, "Email has been successfully verified."));
     }
+
+    @GetMapping("/user/details")
+    public ResponseEntity<?> getUserDetails() {
+
+        // TODO: Future implementation to get user details of a logged in user
+        return ResponseEntity.ok("");
+    }
+
 }
